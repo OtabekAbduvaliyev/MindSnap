@@ -17,11 +17,7 @@ export function getSupabaseAdmin() {
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    "";
-
-  if (!serviceRoleKey) {
-    throw new Error("Missing Supabase key in environment variables");
-  }
+    "sb_publishable_sp7_74R0t1apeEfxnI1K3A_jyZzyEdq";
 
   return createClient(cleanUrl, serviceRoleKey, {
     auth: {

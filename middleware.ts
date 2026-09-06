@@ -29,14 +29,17 @@ export async function middleware(req: NextRequest) {
     // If on login page and already authenticated, redirect to /admin
     if (isLoginPage) {
       if (isValid) {
-        return NextResponse.redirect(new URL("/admin", req.url));
+        const adminUrl = req.nextUrl.clone();
+        adminUrl.pathname = "/admin";
+        return NextResponse.redirect(adminUrl);
       }
       return NextResponse.next();
     }
 
     // If not authenticated and trying to access any other /admin route, redirect to login
     if (!isValid) {
-      const loginUrl = new URL("/admin/login", req.url);
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = "/admin/login";
       return NextResponse.redirect(loginUrl);
     }
   }

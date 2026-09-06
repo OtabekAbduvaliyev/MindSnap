@@ -33,16 +33,16 @@ export async function logoutAdminAction() {
 // ----------------------------------------------------------------
 
 export async function getDashboardStats() {
-  const supabase = getSupabaseAdmin();
-  const now = new Date();
-  const nowIso = now.toISOString();
-
-  const startOfDay = new Date();
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setUTCHours(23, 59, 59, 999);
-
   try {
+    const supabase = getSupabaseAdmin();
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
     const [
       usersRes,
       activeCyclesRes,
@@ -135,72 +135,77 @@ export async function getDashboardStats() {
 // ----------------------------------------------------------------
 
 export async function getUsersList(search?: string) {
-  const supabase = getSupabaseAdmin();
+  try {
+    const supabase = getSupabaseAdmin();
 
-  const fetchUsers = async (includeTz: boolean) => {
-    let query = supabase
-      .from("users")
-      .select(
-        `
-        id,
-        telegram_id,
-        ${includeTz ? "timezone," : ""}
-        created_at,
-        memories (
+    const fetchUsers = async (includeTz: boolean) => {
+      let query = supabase
+        .from("users")
+        .select(
+          `
           id,
-          reminders (
+          telegram_id,
+          ${includeTz ? "timezone," : ""}
+          created_at,
+          memories (
             id,
-            status,
-            is_recurring
+            reminders (
+              id,
+              status,
+              is_recurring
+            )
           )
+        `
         )
-      `
-      )
-      .order("created_at", { ascending: false })
-      .limit(100);
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-    if (search && search.trim()) {
-      const num = Number(search.trim());
-      if (!isNaN(num)) {
-        query = query.eq("telegram_id", num);
+      if (search && search.trim()) {
+        const num = Number(search.trim());
+        if (!isNaN(num)) {
+          query = query.eq("telegram_id", num);
+        }
       }
+      return await query;
+    };
+
+    let { data, error } = await fetchUsers(true);
+
+    if (error && /timezone/i.test(error.message)) {
+      console.warn("[getUsersList] 'timezone' column missing in users table, falling back to default timezone.");
+      const fallback = await fetchUsers(false);
+      data = fallback.data;
+      error = fallback.error;
     }
-    return await query;
-  };
 
-  let { data, error } = await fetchUsers(true);
+    if (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
 
-  if (error && /timezone/i.test(error.message)) {
-    console.warn("[getUsersList] 'timezone' column missing in users table, falling back to default timezone.");
-    const fallback = await fetchUsers(false);
-    data = fallback.data;
-    error = fallback.error;
-  }
+    return (data || []).map((u: any) => {
+      const memories = u.memories || [];
+      let activeRemindersCount = 0;
+      memories.forEach((m: any) => {
+        const rems = m.reminders || [];
+        rems.forEach((r: any) => {
+          if (r.status === "pending") activeRemindersCount++;
+        });
+      });
 
-  if (error) {
-    console.error("Error fetching users:", error);
+      return {
+        id: u.id,
+        telegram_id: u.telegram_id,
+        timezone: u.timezone || "Asia/Tashkent",
+        created_at: u.created_at,
+        memories_count: memories.length,
+        active_reminders_count: activeRemindersCount,
+      };
+    });
+  } catch (error) {
+    console.error("Error in getUsersList:", error);
     return [];
   }
-
-  return (data || []).map((u: any) => {
-    const memories = u.memories || [];
-    let activeRemindersCount = 0;
-    memories.forEach((m: any) => {
-      const rems = m.reminders || [];
-      rems.forEach((r: any) => {
-        if (r.status === "pending") activeRemindersCount++;
-      });
-    });
-
-    return {
-      id: u.id,
-      telegram_id: u.telegram_id,
-      timezone: u.timezone || "Asia/Tashkent",
-      created_at: u.created_at,
-      memories_count: memories.length,
-      active_reminders_count: activeRemindersCount,
-    };
-  });
 }
 
 // ----------------------------------------------------------------
@@ -212,82 +217,87 @@ export async function getRemindersList(filters?: {
   isRecurring?: string;
   search?: string;
 }) {
-  const supabase = getSupabaseAdmin();
+  try {
+    const supabase = getSupabaseAdmin();
 
-  const fetchReminders = async (includeTz: boolean, includeEndDate: boolean) => {
-    let query = supabase
-      .from("reminders")
-      .select(
-        `
-        id,
-        memory_id,
-        scheduled_at,
-        is_recurring,
-        recurring_interval_minutes,
-        ${includeEndDate ? "end_date," : ""}
-        status,
-        created_at,
-        memories (
+    const fetchReminders = async (includeTz: boolean, includeEndDate: boolean) => {
+      let query = supabase
+        .from("reminders")
+        .select(
+          `
           id,
-          content_text,
-          media_type,
-          media_url,
-          users (
-            telegram_id${includeTz ? ",\n            timezone" : ""}
+          memory_id,
+          scheduled_at,
+          is_recurring,
+          recurring_interval_minutes,
+          ${includeEndDate ? "end_date," : ""}
+          status,
+          created_at,
+          memories (
+            id,
+            content_text,
+            media_type,
+            media_url,
+            users (
+              telegram_id${includeTz ? ",\n            timezone" : ""}
+            )
           )
+        `
         )
-      `
-      )
-      .order("scheduled_at", { ascending: true })
-      .limit(100);
+        .order("scheduled_at", { ascending: true })
+        .limit(100);
 
-    if (filters?.status && filters.status !== "all") {
-      query = query.eq("status", filters.status);
+      if (filters?.status && filters.status !== "all") {
+        query = query.eq("status", filters.status);
+      }
+
+      if (filters?.isRecurring === "recurring") {
+        query = query.eq("is_recurring", true);
+      } else if (filters?.isRecurring === "once") {
+        query = query.eq("is_recurring", false);
+      }
+
+      return await query;
+    };
+
+    let includeTz = true;
+    let includeEndDate = true;
+    let { data, error } = await fetchReminders(includeTz, includeEndDate);
+
+    if (error) {
+      if (/timezone/i.test(error.message)) includeTz = false;
+      if (/end_date/i.test(error.message)) includeEndDate = false;
+      const retry = await fetchReminders(includeTz, includeEndDate);
+      data = retry.data;
+      error = retry.error;
     }
 
-    if (filters?.isRecurring === "recurring") {
-      query = query.eq("is_recurring", true);
-    } else if (filters?.isRecurring === "once") {
-      query = query.eq("is_recurring", false);
+    if (error) {
+      const finalFallback = await fetchReminders(false, false);
+      data = finalFallback.data;
+      error = finalFallback.error;
     }
 
-    return await query;
-  };
+    if (error) {
+      console.error("Error fetching reminders:", error);
+      return [];
+    }
 
-  let includeTz = true;
-  let includeEndDate = true;
-  let { data, error } = await fetchReminders(includeTz, includeEndDate);
+    let list = data || [];
+    if (filters?.search && filters.search.trim()) {
+      const s = filters.search.toLowerCase().trim();
+      list = list.filter((r: any) => {
+        const text = r.memories?.content_text?.toLowerCase() || "";
+        const tgId = String(r.memories?.users?.telegram_id || "");
+        return text.includes(s) || tgId.includes(s);
+      });
+    }
 
-  if (error) {
-    if (/timezone/i.test(error.message)) includeTz = false;
-    if (/end_date/i.test(error.message)) includeEndDate = false;
-    const retry = await fetchReminders(includeTz, includeEndDate);
-    data = retry.data;
-    error = retry.error;
-  }
-
-  if (error) {
-    const finalFallback = await fetchReminders(false, false);
-    data = finalFallback.data;
-    error = finalFallback.error;
-  }
-
-  if (error) {
-    console.error("Error fetching reminders:", error);
+    return list as any[];
+  } catch (error) {
+    console.error("Error in getRemindersList:", error);
     return [];
   }
-
-  let list = data || [];
-  if (filters?.search && filters.search.trim()) {
-    const s = filters.search.toLowerCase().trim();
-    list = list.filter((r: any) => {
-      const text = r.memories?.content_text?.toLowerCase() || "";
-      const tgId = String(r.memories?.users?.telegram_id || "");
-      return text.includes(s) || tgId.includes(s);
-    });
-  }
-
-  return list as any[];
 }
 
 export async function stopRecurringReminder(reminderId: string) {
@@ -396,55 +406,60 @@ export async function triggerReminderNow(reminderId: string) {
 // ----------------------------------------------------------------
 
 export async function getMemoriesList(mediaType?: string) {
-  const supabase = getSupabaseAdmin();
+  try {
+    const supabase = getSupabaseAdmin();
 
-  const fetchMemories = async (includeTz: boolean) => {
-    let query = supabase
-      .from("memories")
-      .select(
-        `
-        id,
-        user_id,
-        media_type,
-        media_url,
-        content_text,
-        created_at,
-        users (
-          telegram_id${includeTz ? ",\n          timezone" : ""}
-        ),
-        reminders (
+    const fetchMemories = async (includeTz: boolean) => {
+      let query = supabase
+        .from("memories")
+        .select(
+          `
           id,
-          status,
-          scheduled_at,
-          is_recurring
+          user_id,
+          media_type,
+          media_url,
+          content_text,
+          created_at,
+          users (
+            telegram_id${includeTz ? ",\n          timezone" : ""}
+          ),
+          reminders (
+            id,
+            status,
+            scheduled_at,
+            is_recurring
+          )
+        `
         )
-      `
-      )
-      .order("created_at", { ascending: false })
-      .limit(100);
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-    if (mediaType && mediaType !== "all") {
-      query = query.eq("media_type", mediaType);
+      if (mediaType && mediaType !== "all") {
+        query = query.eq("media_type", mediaType);
+      }
+
+      return await query;
+    };
+
+    let { data, error } = await fetchMemories(true);
+
+    if (error && /timezone/i.test(error.message)) {
+      console.warn("[getMemoriesList] 'timezone' column missing in users table, falling back.");
+      const fallback = await fetchMemories(false);
+      data = fallback.data;
+      error = fallback.error;
     }
 
-    return await query;
-  };
+    if (error) {
+      console.error("Error fetching memories:", error);
+      return [];
+    }
 
-  let { data, error } = await fetchMemories(true);
-
-  if (error && /timezone/i.test(error.message)) {
-    console.warn("[getMemoriesList] 'timezone' column missing in users table, falling back.");
-    const fallback = await fetchMemories(false);
-    data = fallback.data;
-    error = fallback.error;
-  }
-
-  if (error) {
-    console.error("Error fetching memories:", error);
+    return (data || []) as any[];
+  } catch (error) {
+    console.error("Error in getMemoriesList:", error);
     return [];
   }
-
-  return (data || []) as any[];
 }
 
 export async function deleteMemory(memoryId: string) {
@@ -476,56 +491,71 @@ export async function sendBroadcastAction(params: {
 // ----------------------------------------------------------------
 
 export async function getSystemHealth() {
-  const supabase = getSupabaseAdmin();
-  const token = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
-
-  let dbOk = false;
-  let dbLatencyMs = 0;
-  const start = Date.now();
-
   try {
-    const { error } = await supabase.from("users").select("id").limit(1);
-    dbLatencyMs = Date.now() - start;
-    dbOk = !error;
-  } catch {
-    dbOk = false;
-  }
+    const supabase = getSupabaseAdmin();
+    const token = process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
-  let botOk = false;
-  let botUsername = "";
-  if (token) {
+    let dbOk = false;
+    let dbLatencyMs = 0;
+    const start = Date.now();
+
     try {
-      const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        botOk = true;
-        botUsername = data.result.username || "";
-      }
+      const { error } = await supabase.from("users").select("id").limit(1);
+      dbLatencyMs = Date.now() - start;
+      dbOk = !error;
     } catch {
-      botOk = false;
+      dbOk = false;
     }
+
+    let botOk = false;
+    let botUsername = "";
+    if (token) {
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          botOk = true;
+          botUsername = data.result.username || "";
+        }
+      } catch {
+        botOk = false;
+      }
+    }
+
+    // Count overdue reminders (> 2 mins past scheduled_at and still pending)
+    let overdueCount = 0;
+    try {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const res = await supabase
+        .from("reminders")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending")
+        .lt("scheduled_at", twoMinutesAgo);
+      overdueCount = res.count || 0;
+    } catch {
+      overdueCount = 0;
+    }
+
+    return {
+      database: {
+        status: dbOk ? "healthy" : "down",
+        latencyMs: dbLatencyMs,
+      },
+      telegramBot: {
+        status: botOk ? "connected" : "error",
+        username: botUsername,
+      },
+      scheduler: {
+        overduePendingCount: overdueCount,
+        status: overdueCount > 0 ? "warning" : "nominal",
+      },
+    };
+  } catch (error) {
+    console.error("Error in getSystemHealth:", error);
+    return {
+      database: { status: "down", latencyMs: 0 },
+      telegramBot: { status: "error", username: "" },
+      scheduler: { overduePendingCount: 0, status: "warning" },
+    };
   }
-
-  // Count overdue reminders (> 2 mins past scheduled_at and still pending)
-  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-  const { count: overdueCount } = await supabase
-    .from("reminders")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "pending")
-    .lt("scheduled_at", twoMinutesAgo);
-
-  return {
-    database: {
-      status: dbOk ? "healthy" : "down",
-      latencyMs: dbLatencyMs,
-    },
-    telegramBot: {
-      status: botOk ? "connected" : "error",
-      username: botUsername,
-    },
-    scheduler: {
-      overduePendingCount: overdueCount || 0,
-      status: (overdueCount || 0) > 0 ? "warning" : "nominal",
-    },
-  };
 }
