@@ -7,7 +7,7 @@ import {
   triggerReminderNow,
   deleteReminder,
 } from "@/app/admin/actions";
-import { Play, Square, Calendar, Trash2, Loader2, Check } from "lucide-react";
+import { Play, Square, Calendar, Trash2, Loader2, Check, X } from "lucide-react";
 
 interface ReminderRowActionsProps {
   reminderId: string;
@@ -34,27 +34,27 @@ export default function ReminderRowActions({
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const handleStop = () => {
-    if (!confirm("Are you sure you want to stop this recurring cycle?")) return;
+    if (!confirm("Ushbu takrorlanuvchi tsiklni to'xtatishni xohlaysizmi?")) return;
     startTransition(async () => {
       try {
         await stopRecurringReminder(reminderId);
-        setFeedback("Stopped");
+        setFeedback("To'xtatildi");
         setTimeout(() => setFeedback(null), 3000);
       } catch (err: any) {
-        alert(err.message || "Failed to stop cycle");
+        alert(err.message || "Tsiklni to'xtatib bo'lmadi");
       }
     });
   };
 
   const handleTrigger = () => {
-    if (!confirm("Trigger this reminder right now via Telegram Bot?")) return;
+    if (!confirm("Ushbu eslatmani zudlik bilan Telegram orqali yuborilsinmi?")) return;
     startTransition(async () => {
       try {
         await triggerReminderNow(reminderId);
-        setFeedback("Sent");
+        setFeedback("Yuborildi");
         setTimeout(() => setFeedback(null), 3000);
       } catch (err: any) {
-        alert(err.message || "Failed to trigger reminder");
+        alert(err.message || "Eslatmani yuborib bo'lmadi");
       }
     });
   };
@@ -67,30 +67,30 @@ export default function ReminderRowActions({
         const iso = new Date(newDate).toISOString();
         await rescheduleReminder(reminderId, iso);
         setShowReschedule(false);
-        setFeedback("Rescheduled");
+        setFeedback("O'zgartirildi");
         setTimeout(() => setFeedback(null), 3000);
       } catch (err: any) {
-        alert(err.message || "Failed to reschedule reminder");
+        alert(err.message || "Vaqtni o'zgartirib bo'lmadi");
       }
     });
   };
 
   const handleDelete = () => {
-    if (!confirm("Delete this reminder permanently?")) return;
+    if (!confirm("Ushbu eslatmani butunlay o'chirishni tasdiqlaysizmi?")) return;
     startTransition(async () => {
       try {
         await deleteReminder(reminderId);
       } catch (err: any) {
-        alert(err.message || "Failed to delete reminder");
+        alert(err.message || "Eslatmani o'chirib bo'lmadi");
       }
     });
   };
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-end gap-1.5 text-xs text-indigo-400">
-        <Loader2 className="w-4 h-4 animate-spin" />
-        <span>Updating...</span>
+      <div className="flex items-center justify-end gap-1.5 text-xs text-[#7026ED]">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        <span>Yangilanmoqda...</span>
       </div>
     );
   }
@@ -98,71 +98,80 @@ export default function ReminderRowActions({
   return (
     <div className="flex items-center justify-end gap-1.5 relative">
       {feedback && (
-        <span className="flex items-center gap-1 text-xs text-emerald-400 font-semibold mr-2 bg-emerald-500/10 px-2 py-0.5 rounded">
-          <Check className="w-3 h-3" />
+        <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold mr-1.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-lg">
+          <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
           {feedback}
         </span>
       )}
 
-      {/* Trigger Now Button */}
+      {/* Zudlik bilan yuborish (Trigger Now) */}
       <button
         type="button"
         onClick={handleTrigger}
-        title="Trigger Now via Telegram"
-        className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all"
+        title="Zudlik bilan Telegramga yuborish"
+        className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 transition-colors cursor-pointer"
       >
         <Play className="w-3.5 h-3.5" />
       </button>
 
-      {/* Stop Recurring Button */}
+      {/* Tsiklni to'xtatish */}
       {isRecurring && status === "pending" && (
         <button
           type="button"
           onClick={handleStop}
-          title="Stop Cycle"
-          className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 transition-all"
+          title="Tsiklni to'xtatish"
+          className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 transition-colors cursor-pointer"
         >
           <Square className="w-3.5 h-3.5" />
         </button>
       )}
 
-      {/* Reschedule Button & Popover */}
+      {/* Vaqtni o'zgartirish (Reschedule) */}
       <div className="relative">
         <button
           type="button"
           onClick={() => setShowReschedule(!showReschedule)}
-          title="Reschedule Reminder"
-          className="p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 transition-all"
+          title="Vaqtni o'zgartirish"
+          className="p-1.5 rounded-lg bg-[#7026ED]/10 dark:bg-[#7026ED]/20 hover:bg-[#7026ED]/20 dark:hover:bg-[#7026ED]/30 text-[#7026ED] dark:text-[#A78BFA] border border-[#7026ED]/20 dark:border-[#7026ED]/30 transition-colors cursor-pointer"
         >
           <Calendar className="w-3.5 h-3.5" />
         </button>
 
         {showReschedule && (
-          <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95">
-            <form onSubmit={handleRescheduleSubmit} className="space-y-2">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase">
-                New Trigger Time
-              </label>
+          <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-white dark:bg-[#121824] border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl z-50 animate-in fade-in zoom-in-95">
+            <form onSubmit={handleRescheduleSubmit} className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-semibold text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+                  Yangi vaqt
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowReschedule(false)}
+                  className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <input
                 type="datetime-local"
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
                 required
-                className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-2.5 py-1.5 bg-neutral-50 dark:bg-[#0c1017] border border-neutral-200 dark:border-neutral-700 rounded-lg text-xs text-neutral-900 dark:text-white focus:outline-none focus:border-[#7026ED] focus:bg-white dark:focus:bg-[#161e2e] transition-all"
               />
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowReschedule(false)}
-                  className="px-2 py-1 text-[11px] text-slate-400 hover:text-slate-200"
+                  className="px-2.5 py-1 text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 cursor-pointer"
                 >
-                  Cancel
+                  Bekor qilish
                 </button>
                 <button
                   type="submit"
-                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[11px] font-semibold"
+                  className="px-3 py-1 bg-[#7026ED] hover:bg-[#5E1EE5] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                 >
-                  Save
+                  Saqlash
                 </button>
               </div>
             </form>
@@ -170,12 +179,12 @@ export default function ReminderRowActions({
         )}
       </div>
 
-      {/* Delete Button */}
+      {/* O'chirish */}
       <button
         type="button"
         onClick={handleDelete}
-        title="Delete Reminder"
-        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all"
+        title="Eslatmani butunlay o'chirish"
+        className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 transition-colors cursor-pointer"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>

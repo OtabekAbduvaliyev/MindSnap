@@ -9,36 +9,44 @@ import {
   Clock,
   ShieldCheck,
   RefreshCw,
+  Server,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
-export const revalidate = 0; // always fetch fresh status
+export const revalidate = 0; // Har doim eng so'nggi holatni olish
 
 export default async function AdminSystemPage() {
   const health = await getSystemHealth();
 
   const envChecks = [
     {
-      name: "Supabase Database & Storage",
+      name: "Supabase ma'lumotlar bazasi va saqlash",
       status: Boolean(
         process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
       ),
-      detail: health.database.status === "healthy" ? `Healthy (${health.database.latencyMs}ms)` : "Unavailable",
+      detail:
+        health.database.status === "healthy"
+          ? `Faol (${health.database.latencyMs}ms)`
+          : "Ulanib bo'lmadi",
     },
     {
-      name: "Telegram Bot API Token",
+      name: "Telegram Bot API kaliti (Token)",
       status: Boolean(
         process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
       ),
-      detail: health.telegramBot.status === "connected" ? `@${health.telegramBot.username}` : "Invalid / Disconnected",
+      detail:
+        health.telegramBot.status === "connected"
+          ? `@${health.telegramBot.username}`
+          : "Yaroqsiz / Ulanmagan",
     },
     {
-      name: "Google Gemini Flash API",
+      name: "Google Gemini Flash AI API",
       status: Boolean(process.env.GEMINI_API_KEY),
-      detail: process.env.GEMINI_API_KEY ? "Configured" : "Missing key",
+      detail: process.env.GEMINI_API_KEY ? "Sozlangan va faol" : "Kalit kiritilmagan",
     },
     {
-      name: "Admin Authentication System",
+      name: "Admin xavfsizlik va autentifikatsiya",
       status: Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD),
       detail: process.env.ADMIN_EMAIL || "otabekabduvaliyev1910@gmail.com",
     },
@@ -46,148 +54,177 @@ export default async function AdminSystemPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800/60">
+      {/* Sahifa sarlavhasi */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-neutral-200/80 dark:border-neutral-800">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <Activity className="w-8 h-8 text-indigo-400" />
-            System Health & Diagnostics
+          <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white tracking-tight flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#7026ED]/10 dark:bg-[#7026ED]/20 border border-[#7026ED]/20 dark:border-[#7026ED]/30 flex items-center justify-center text-[#7026ED] dark:text-[#A78BFA]">
+              <Activity className="w-5 h-5" />
+            </div>
+            Tizim holati va diagnostika
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Real-time infrastructure health, latency checks, and bot scheduler diagnostics
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            Infratuzilma faolligi, ma&apos;lumotlar bazasi tezligi va bot xizmatlari holati monitoringi
           </p>
         </div>
 
         <Link
           href="/admin/system"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-all self-start"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-[#0c1017] hover:bg-neutral-50 dark:hover:bg-[#161e2e] text-neutral-700 dark:text-neutral-200 text-xs font-bold border border-neutral-200/90 dark:border-neutral-800/80 shadow-2xs transition-all self-start active:scale-95"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Diagnostics</span>
+          <RefreshCw className="w-3.5 h-3.5 text-[#7026ED] dark:text-[#A78BFA]" />
+          <span>Diagnostikani yangilash</span>
         </Link>
       </div>
 
-      {/* Main Service Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Database Status */}
-        <div className="p-6 rounded-2xl bg-[#0c1017]/80 border border-slate-800/80 backdrop-blur-xl space-y-4">
+      {/* Asosiy xizmatlar holati */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Supabase Database */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#0c1017] border border-neutral-200/90 dark:border-neutral-800/80 shadow-2xs space-y-4 hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40">
               <Database className="w-5 h-5" />
             </div>
             {health.database.status === "healthy" ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Operational
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Barqaror ishlayapti
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full">
-                <XCircle className="w-3.5 h-3.5" />
-                Unreachable
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 px-2.5 py-1 rounded-full">
+                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                Aloqa uzilgan
               </span>
             )}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Supabase PostgreSQL</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Response Latency: <span className="text-slate-200 font-mono font-semibold">{health.database.latencyMs}ms</span>
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Supabase PostgreSQL</h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              Javob kechikishi:{" "}
+              <span className="text-neutral-900 dark:text-white font-mono font-bold">
+                {health.database.latencyMs} ms
+              </span>
             </p>
           </div>
         </div>
 
-        {/* Telegram Bot API */}
-        <div className="p-6 rounded-2xl bg-[#0c1017]/80 border border-slate-800/80 backdrop-blur-xl space-y-4">
+        {/* Telegram Bot Gateway */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#0c1017] border border-neutral-200/90 dark:border-neutral-800/80 shadow-2xs space-y-4 hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <div className="p-3 rounded-xl bg-[#7026ED]/10 dark:bg-[#7026ED]/20 text-[#7026ED] dark:text-[#A78BFA] border border-[#7026ED]/20 dark:border-[#7026ED]/30">
               <Bot className="w-5 h-5" />
             </div>
             {health.telegramBot.status === "connected" ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Connected
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Uzluksiz ulangan
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full">
-                <XCircle className="w-3.5 h-3.5" />
-                Error
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 px-2.5 py-1 rounded-full">
+                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                Xatolik mavjud
               </span>
             )}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Telegram Gateway</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Bot Handle:{" "}
-              <span className="text-cyan-300 font-mono font-semibold">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Telegram Gateway</h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              Bot manzili:{" "}
+              <span className="text-[#7026ED] dark:text-[#A78BFA] font-mono font-bold">
                 @{health.telegramBot.username || "mindsnaporgbot"}
               </span>
             </p>
           </div>
         </div>
 
-        {/* Scheduler Status */}
-        <div className="p-6 rounded-2xl bg-[#0c1017]/80 border border-slate-800/80 backdrop-blur-xl space-y-4">
+        {/* Rejalashtiruvchi navbati */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#0c1017] border border-neutral-200/90 dark:border-neutral-800/80 shadow-2xs space-y-4 hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between">
-            <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
+            <div className="p-3 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/40">
               <Clock className="w-5 h-5" />
             </div>
             {health.scheduler.status === "nominal" ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                On Track
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Reja bo&apos;yicha
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Lag Detected
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 px-2.5 py-1 rounded-full">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                Kechikish bor
               </span>
             )}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Scheduler Queue</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Overdue Pending Jobs:{" "}
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">Eslatmalar navbati</h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              Muddati o&apos;tgan kutilayotganlar:{" "}
               <span
-                className={`font-mono font-semibold ${
+                className={`font-mono font-bold ${
                   health.scheduler.overduePendingCount > 0
-                    ? "text-amber-400"
-                    : "text-emerald-400"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-emerald-600 dark:text-emerald-400"
                 }`}
               >
-                {health.scheduler.overduePendingCount}
+                {health.scheduler.overduePendingCount} ta
               </span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Configuration Checklist */}
-      <div className="p-6 rounded-2xl bg-[#0c1017]/80 border border-slate-800/80 backdrop-blur-xl">
-        <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-indigo-400" />
-          Environment & Security Configuration
-        </h3>
-        <p className="text-xs text-slate-400 mb-6">
-          Verification of required environment variables for bot and dashboard runtime
-        </p>
+      {/* Muhit va xavfsizlik konfiguratsiyasi */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-[#0c1017] border border-neutral-200/90 dark:border-neutral-800/80 shadow-2xs">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-[#7026ED]/10 dark:bg-[#7026ED]/20 border border-[#7026ED]/20 dark:border-[#7026ED]/30 flex items-center justify-center text-[#7026ED] dark:text-[#A78BFA]">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+              Muhit va xavfsizlik konfiguratsiyasi
+            </h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Bot va admin paneli ishlashi uchun zarur bo&apos;lgan asosiy muhit o&apos;zgaruvchilari tekshiruvi
+            </p>
+          </div>
+        </div>
 
-        <div className="divide-y divide-slate-800/60">
+        <div className="mt-6 divide-y divide-neutral-100 dark:divide-neutral-800/60">
           {envChecks.map((item) => (
-            <div key={item.name} className="py-3.5 flex items-center justify-between text-xs">
-              <span className="text-slate-200 font-medium">{item.name}</span>
+            <div
+              key={item.name}
+              className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+            >
+              <span className="text-neutral-800 dark:text-neutral-200 font-semibold">{item.name}</span>
               <div className="flex items-center gap-3">
-                <span className="text-slate-400 font-mono">{item.detail}</span>
+                <span className="text-neutral-500 dark:text-neutral-400 font-mono bg-neutral-50 dark:bg-[#121824] border border-neutral-200/60 dark:border-neutral-700 px-2.5 py-1 rounded-lg text-[11px]">
+                  {item.detail}
+                </span>
                 {item.status ? (
-                  <span className="p-1 rounded-full bg-emerald-500/10 text-emerald-400">
+                  <span className="p-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/60" title="Faol">
                     <CheckCircle2 className="w-4 h-4" />
                   </span>
                 ) : (
-                  <span className="p-1 rounded-full bg-rose-500/10 text-rose-400">
+                  <span className="p-1 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200/70 dark:border-rose-800/60" title="Xatolik">
                     <XCircle className="w-4 h-4" />
                   </span>
                 )}
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Qo'shimcha ma'lumot qutisi */}
+      <div className="p-5 rounded-2xl bg-radial from-[#7026ED]/5 to-transparent dark:from-[#7026ED]/15 border border-[#7026ED]/15 dark:border-[#7026ED]/30 flex items-start gap-4">
+        <div className="w-9 h-9 rounded-xl bg-[#7026ED]/10 dark:bg-[#7026ED]/20 border border-[#7026ED]/20 dark:border-[#7026ED]/30 flex items-center justify-center text-[#7026ED] dark:text-[#A78BFA] shrink-0 mt-0.5">
+          <Zap className="w-4 h-4" />
+        </div>
+        <div className="text-xs space-y-1">
+          <h4 className="font-bold text-neutral-900 dark:text-white">Avtomatik diagnostika tizimi</h4>
+          <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+            Diagnostika har safar ushbu sahifaga kirilganda jonli so&apos;rov orqali yangilanadi. Supabase va Telegram API kechikishlari real vaqt rejimida o&apos;lchanadi. Agar qandaydir muammo yuzaga kelsa, server sozlamalari va <code>.env</code> faylini qayta ko&apos;rib chiqing.
+          </p>
         </div>
       </div>
     </div>
