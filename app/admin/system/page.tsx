@@ -118,7 +118,7 @@ export default async function AdminSystemPage() {
             <p className="text-xs text-slate-400 mt-1">
               Bot Handle:{" "}
               <span className="text-cyan-300 font-mono font-semibold">
-                @{health.telegramBot.username || "MindSnap"}
+                @{health.telegramBot.username || "mindsnaporgbot"}
               </span>
             </p>
           </div>
